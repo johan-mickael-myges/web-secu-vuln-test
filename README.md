@@ -54,32 +54,27 @@ docker compose up --build -d
 
 **Solution Manuelle** :
 ```diff
-+ // Validation manuelle
-+ if (!username || typeof username !== 'string') {
-+     throw new Error('Username is required and must be a string');
++ // Protection contre l'injection NoSQL
++ if (typeof username !== 'string') {
++     throw new Error('Username must be a string');
 + }
 + 
-+ if (username.length > 50) {
-+     throw new Error('Username too long');
++ // Éviter les opérateurs MongoDB
++ if (username.includes('$') || username.includes('{') || username.includes('}')) {
++     throw new Error('Invalid characters in username');
 + }
 + 
-+ // Vérifier le format (lettres, chiffres, tirets, underscores)
-+ if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
-+     throw new Error('Invalid username format');
-+ }
-+ 
-+ const query = { username: username.trim() };
++ const query = { username: username };
 ```
 
 **Solution avec Zod** :
 ```diff
-+ // Avec Zod (validation de schéma)
++ // Avec Zod (protection contre l'injection)
 + import { z } from 'zod';
 + 
 + const UsernameSchema = z.string()
-+     .min(1, 'Username is required')
-+     .max(50, 'Username too long')
-+     .regex(/^[a-zA-Z0-9_-]+$/, 'Invalid username format');
++     .refine(val => !val.includes('$') && !val.includes('{') && !val.includes('}'), 
++         'Invalid characters in username');
 + 
 + const validatedUsername = UsernameSchema.parse(username);
 + const query = { username: validatedUsername };
@@ -87,12 +82,16 @@ docker compose up --build -d
 
 **Solution avec Joi** :
 ```diff
-+ // Avec Joi (validation alternative)
++ // Avec Joi (protection contre l'injection)
 + import Joi from 'joi';
 + 
 + const { error, value } = Joi.string()
-+     .min(1).max(50)
-+     .pattern(/^[a-zA-Z0-9_-]+$/)
++     .custom((val, helpers) => {
++         if (val.includes('$') || val.includes('{') || val.includes('}')) {
++             return helpers.error('Invalid characters in username');
++         }
++         return val;
++     })
 +     .validate(username);
 + 
 + if (error) throw new Error(error.details[0].message);
@@ -117,19 +116,13 @@ docker compose up --build -d
 
 **Solution Manuelle** :
 ```diff
-+ // Sanitisation manuelle
-+ if (!content || typeof content !== 'string') {
-+     throw new Error('Search content is required and must be a string');
-+ }
-+ 
-+ if (content.length > 200) {
-+     throw new Error('Search content too long');
++ // Protection contre l'injection NoSQL
++ if (typeof content !== 'string') {
++     throw new Error('Content must be a string');
 + }
 + 
 + // Échapper les caractères spéciaux pour les regex
-+ const sanitizedContent = content
-+     .trim()
-+     .replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
++ const sanitizedContent = content.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 + 
 + const query = { content: { $regex: sanitizedContent, $options: 'i' } };
 ```
@@ -141,9 +134,7 @@ docker compose up --build -d
 + import escapeRegex from 'escape-regex-string';
 + 
 + const ContentSchema = z.string()
-+     .min(1, 'Search content is required')
-+     .max(200, 'Search content too long')
-+     .transform(val => escapeRegex(val.trim()));
++     .transform(val => escapeRegex(val));
 + 
 + const sanitizedContent = ContentSchema.parse(content);
 + const query = { content: { $regex: sanitizedContent, $options: 'i' } };
@@ -155,12 +146,10 @@ docker compose up --build -d
 + import Joi from 'joi';
 + import escapeRegex from 'escape-regex-string';
 + 
-+ const { error, value } = Joi.string()
-+     .min(1).max(200)
-+     .validate(content);
++ const { error, value } = Joi.string().validate(content);
 + 
 + if (error) throw new Error(error.details[0].message);
-+ const sanitizedContent = escapeRegex(value.trim());
++ const sanitizedContent = escapeRegex(value);
 + const query = { content: { $regex: sanitizedContent, $options: 'i' } };
 ```
 
@@ -182,32 +171,27 @@ docker compose up --build -d
 
 **Solution Manuelle** :
 ```diff
-+ // Validation manuelle
-+ if (!room || typeof room !== 'string') {
-+     throw new Error('Room name is required and must be a string');
++ // Protection contre l'injection NoSQL
++ if (typeof room !== 'string') {
++     throw new Error('Room must be a string');
 + }
 + 
-+ if (room.length > 50) {
-+     throw new Error('Room name too long');
++ // Éviter les opérateurs MongoDB
++ if (room.includes('$') || room.includes('{') || room.includes('}')) {
++     throw new Error('Invalid characters in room name');
 + }
 + 
-+ // Vérifier le format (lettres, chiffres, tirets, underscores)
-+ if (!/^[a-zA-Z0-9_-]+$/.test(room)) {
-+     throw new Error('Invalid room name format');
-+ }
-+ 
-+ const query = { room: room.trim() };
++ const query = { room: room };
 ```
 
 **Solution avec Zod** :
 ```diff
-+ // Avec Zod (validation de schéma)
++ // Avec Zod (protection contre l'injection)
 + import { z } from 'zod';
 + 
 + const RoomSchema = z.string()
-+     .min(1, 'Room name is required')
-+     .max(50, 'Room name too long')
-+     .regex(/^[a-zA-Z0-9_-]+$/, 'Invalid room name format');
++     .refine(val => !val.includes('$') && !val.includes('{') && !val.includes('}'), 
++         'Invalid characters in room name');
 + 
 + const validatedRoom = RoomSchema.parse(room);
 + const query = { room: validatedRoom };
@@ -215,12 +199,16 @@ docker compose up --build -d
 
 **Solution avec Joi** :
 ```diff
-+ // Avec Joi (validation alternative)
++ // Avec Joi (protection contre l'injection)
 + import Joi from 'joi';
 + 
 + const { error, value } = Joi.string()
-+     .min(1).max(50)
-+     .pattern(/^[a-zA-Z0-9_-]+$/)
++     .custom((val, helpers) => {
++         if (val.includes('$') || val.includes('{') || val.includes('}')) {
++             return helpers.error('Invalid characters in room name');
++         }
++         return val;
++     })
 +     .validate(room);
 + 
 + if (error) throw new Error(error.details[0].message);
@@ -240,45 +228,33 @@ docker compose up --build -d
 
 **Solution Manuelle** :
 ```diff
-+ // Validation et sanitisation manuelle
-+ if (!message.content || typeof message.content !== 'string') {
-+     throw new Error('Message content is required and must be a string');
++ // Protection contre l'injection NoSQL
++ if (typeof message.content !== 'string') {
++     throw new Error('Message content must be a string');
 + }
 + 
-+ if (message.content.length > 1000) {
-+     throw new Error('Message content too long');
-+ }
-+ 
-+ // Nettoyer le contenu
-+ const sanitizedContent = message.content
-+     .trim()
-+     .replace(/[<>]/g, '') // Éviter les balises HTML
-+     .replace(/\s+/g, ' '); // Normaliser les espaces
-+ 
-+ if (sanitizedContent.length === 0) {
-+     throw new Error('Message content cannot be empty after cleaning');
++ // Éviter les opérateurs MongoDB dans le contenu
++ if (message.content.includes('$') || message.content.includes('{') || message.content.includes('}')) {
++     throw new Error('Invalid characters in message content');
 + }
 + 
 + const newMessage: Message = { 
 +     ...message, 
-+     content: sanitizedContent,
 +     timestamp: new Date() 
 + };
 ```
 
 **Solution avec Zod** :
 ```diff
-+ // Avec Zod (validation de schéma)
++ // Avec Zod (protection contre l'injection)
 + import { z } from 'zod';
 + 
 + const MessageSchema = z.object({
 +     content: z.string()
-+         .min(1, 'Message cannot be empty')
-+         .max(1000, 'Message too long')
-+         .transform(val => val.trim())
-+         .refine(val => val.length > 0, 'Message cannot be empty after trimming'),
-+     username: z.string().min(1).max(50),
-+     room: z.string().min(1).max(50)
++         .refine(val => !val.includes('$') && !val.includes('{') && !val.includes('}'), 
++             'Invalid characters in message content'),
++     username: z.string(),
++     room: z.string()
 + });
 + 
 + const validatedMessage = MessageSchema.parse(message);
@@ -290,13 +266,20 @@ docker compose up --build -d
 
 **Solution avec Joi** :
 ```diff
-+ // Avec Joi (validation alternative)
++ // Avec Joi (protection contre l'injection)
 + import Joi from 'joi';
 + 
 + const messageSchema = Joi.object({
-+     content: Joi.string().min(1).max(1000).required(),
-+     username: Joi.string().min(1).max(50).required(),
-+     room: Joi.string().min(1).max(50).required()
++     content: Joi.string()
++         .custom((val, helpers) => {
++             if (val.includes('$') || val.includes('{') || val.includes('}')) {
++                 return helpers.error('Invalid characters in message content');
++             }
++             return val;
++         })
++         .required(),
++     username: Joi.string().required(),
++     room: Joi.string().required()
 + });
 + 
 + const { error, value } = messageSchema.validate(message);
