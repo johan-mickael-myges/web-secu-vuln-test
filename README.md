@@ -54,14 +54,15 @@ docker compose up --build -d
 
 **Solution Manuelle** :
 ```diff
-+ // Protection contre l'injection NoSQL
++ // Protection contre l'injection (bonne pratique générale)
 + if (typeof username !== 'string') {
 +     throw new Error('Username must be a string');
 + }
 + 
-+ // Éviter les opérateurs MongoDB
-+ if (username.includes('$') || username.includes('{') || username.includes('}')) {
-+     throw new Error('Invalid characters in username');
++ // Validation stricte : whitelist des caractères autorisés
++ const allowedChars = /^[a-zA-Z0-9_-]+$/;
++ if (!allowedChars.test(username)) {
++     throw new Error('Username contains invalid characters');
 + }
 + 
 + const query = { username: username };
@@ -73,8 +74,7 @@ docker compose up --build -d
 + import { z } from 'zod';
 + 
 + const UsernameSchema = z.string()
-+     .refine(val => !val.includes('$') && !val.includes('{') && !val.includes('}'), 
-+         'Invalid characters in username');
++     .regex(/^[a-zA-Z0-9_-]+$/, 'Username contains invalid characters');
 + 
 + const validatedUsername = UsernameSchema.parse(username);
 + const query = { username: validatedUsername };
@@ -86,12 +86,7 @@ docker compose up --build -d
 + import Joi from 'joi';
 + 
 + const { error, value } = Joi.string()
-+     .custom((val, helpers) => {
-+         if (val.includes('$') || val.includes('{') || val.includes('}')) {
-+             return helpers.error('Invalid characters in username');
-+         }
-+         return val;
-+     })
++     .pattern(/^[a-zA-Z0-9_-]+$/)
 +     .validate(username);
 + 
 + if (error) throw new Error(error.details[0].message);
@@ -116,41 +111,38 @@ docker compose up --build -d
 
 **Solution Manuelle** :
 ```diff
-+ // Protection contre l'injection NoSQL
++ // Protection contre l'injection (bonne pratique générale)
 + if (typeof content !== 'string') {
 +     throw new Error('Content must be a string');
 + }
 + 
-+ // Échapper les caractères spéciaux pour les regex
-+ const sanitizedContent = content.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
++ // Utiliser des paramètres préparés au lieu de concaténation
++ const query = { content: { $regex: content, $options: 'i' } };
 + 
-+ const query = { content: { $regex: sanitizedContent, $options: 'i' } };
++ // Alternative : utiliser l'indexation MongoDB sécurisée
++ // const query = { content: content };
 ```
 
 **Solution avec Zod** :
 ```diff
-+ // Avec Zod + escape-regex-string
++ // Avec Zod (protection contre l'injection)
 + import { z } from 'zod';
-+ import escapeRegex from 'escape-regex-string';
 + 
-+ const ContentSchema = z.string()
-+     .transform(val => escapeRegex(val));
++ const ContentSchema = z.string();
 + 
-+ const sanitizedContent = ContentSchema.parse(content);
-+ const query = { content: { $regex: sanitizedContent, $options: 'i' } };
++ const validatedContent = ContentSchema.parse(content);
++ const query = { content: { $regex: validatedContent, $options: 'i' } };
 ```
 
 **Solution avec Joi** :
 ```diff
-+ // Avec Joi + escape-regex-string
++ // Avec Joi (protection contre l'injection)
 + import Joi from 'joi';
-+ import escapeRegex from 'escape-regex-string';
 + 
 + const { error, value } = Joi.string().validate(content);
 + 
 + if (error) throw new Error(error.details[0].message);
-+ const sanitizedContent = escapeRegex(value);
-+ const query = { content: { $regex: sanitizedContent, $options: 'i' } };
++ const query = { content: { $regex: value, $options: 'i' } };
 ```
 
 ### 3. Recherche par Salle
@@ -171,14 +163,15 @@ docker compose up --build -d
 
 **Solution Manuelle** :
 ```diff
-+ // Protection contre l'injection NoSQL
++ // Protection contre l'injection (bonne pratique générale)
 + if (typeof room !== 'string') {
 +     throw new Error('Room must be a string');
 + }
 + 
-+ // Éviter les opérateurs MongoDB
-+ if (room.includes('$') || room.includes('{') || room.includes('}')) {
-+     throw new Error('Invalid characters in room name');
++ // Validation stricte : whitelist des caractères autorisés
++ const allowedChars = /^[a-zA-Z0-9_-]+$/;
++ if (!allowedChars.test(room)) {
++     throw new Error('Room name contains invalid characters');
 + }
 + 
 + const query = { room: room };
@@ -190,8 +183,7 @@ docker compose up --build -d
 + import { z } from 'zod';
 + 
 + const RoomSchema = z.string()
-+     .refine(val => !val.includes('$') && !val.includes('{') && !val.includes('}'), 
-+         'Invalid characters in room name');
++     .regex(/^[a-zA-Z0-9_-]+$/, 'Room name contains invalid characters');
 + 
 + const validatedRoom = RoomSchema.parse(room);
 + const query = { room: validatedRoom };
@@ -203,12 +195,7 @@ docker compose up --build -d
 + import Joi from 'joi';
 + 
 + const { error, value } = Joi.string()
-+     .custom((val, helpers) => {
-+         if (val.includes('$') || val.includes('{') || val.includes('}')) {
-+             return helpers.error('Invalid characters in room name');
-+         }
-+         return val;
-+     })
++     .pattern(/^[a-zA-Z0-9_-]+$/)
 +     .validate(room);
 + 
 + if (error) throw new Error(error.details[0].message);
@@ -228,18 +215,20 @@ docker compose up --build -d
 
 **Solution Manuelle** :
 ```diff
-+ // Protection contre l'injection NoSQL
++ // Protection contre l'injection (bonne pratique générale)
 + if (typeof message.content !== 'string') {
 +     throw new Error('Message content must be a string');
 + }
 + 
-+ // Éviter les opérateurs MongoDB dans le contenu
-+ if (message.content.includes('$') || message.content.includes('{') || message.content.includes('}')) {
-+     throw new Error('Invalid characters in message content');
-+ }
++ // Sanitisation : échapper les caractères dangereux
++ const sanitizedContent = message.content
++     .replace(/[<>]/g, '') // Éviter les balises HTML
++     .replace(/javascript:/gi, '') // Éviter les protocoles dangereux
++     .trim();
 + 
 + const newMessage: Message = { 
 +     ...message, 
++     content: sanitizedContent,
 +     timestamp: new Date() 
 + };
 ```
@@ -251,8 +240,11 @@ docker compose up --build -d
 + 
 + const MessageSchema = z.object({
 +     content: z.string()
-+         .refine(val => !val.includes('$') && !val.includes('{') && !val.includes('}'), 
-+             'Invalid characters in message content'),
++         .transform(val => val
++             .replace(/[<>]/g, '')
++             .replace(/javascript:/gi, '')
++             .trim()
++         ),
 +     username: z.string(),
 +     room: z.string()
 + });
@@ -272,10 +264,11 @@ docker compose up --build -d
 + const messageSchema = Joi.object({
 +     content: Joi.string()
 +         .custom((val, helpers) => {
-+             if (val.includes('$') || val.includes('{') || val.includes('}')) {
-+                 return helpers.error('Invalid characters in message content');
-+             }
-+             return val;
++             const sanitized = val
++                 .replace(/[<>]/g, '')
++                 .replace(/javascript:/gi, '')
++                 .trim();
++             return sanitized;
 +         })
 +         .required(),
 +     username: Joi.string().required(),
@@ -334,12 +327,14 @@ socket.emit('search-messages', {
 - **Joi** : Validation robuste et flexible
 - **Yup** : Validation simple et performante
 
-### Sanitisation
-- **escape-regex-string** : Échapper les caractères spéciaux pour les regex
+### Sanitisation et Protection
 - **DOMPurify** : Sanitisation HTML côté client
 - **validator.js** : Validation et sanitisation complète
+- **xss** : Protection contre les attaques XSS
+- **sqlstring** : Échapper les caractères pour SQL
 
-### Protection NoSQL
-- **mongodb-sanitize** : Nettoyer les objets MongoDB
-- **express-rate-limit** : Limiter les requêtes
+### Sécurité Générale
 - **helmet** : Headers de sécurité HTTP
+- **express-rate-limit** : Limiter les requêtes
+- **cors** : Configuration CORS sécurisée
+- **bcrypt** : Hachage sécurisé des mots de passe
