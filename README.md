@@ -9,22 +9,22 @@
 ### Démarrage
 ```bash
 # Cloner le projet
-git clone <repository-url>
-cd secu-web
+git clone https://github.com/johan-mickael-myges/web-secu-vuln-test.git
+cd web-secu-vuln-test
+
+# Nettoyer les conteneurs existants (si nécessaire)
+docker compose down
+docker system prune -f
+
+# Générer les certificats SSL
+chmod +x nginx/generate-ssl.sh
+./nginx/generate-ssl.sh
 
 # Démarrer l'application
-docker compose up -d
+docker compose up --build -d
 
 # Accéder à l'application
 # https://localhost
-```
-
-### Génération des Certificats SSL
-```bash
-# Générer les certificats SSL pour le développement
-cd nginx
-chmod +x generate-ssl.sh
-./generate-ssl.sh
 ```
 
 ## 🌐 Comment y Accéder
