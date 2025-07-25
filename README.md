@@ -40,6 +40,8 @@ docker compose up --build -d
 **Fonctionnalité** : Recherche de messages par nom d'utilisateur
 
 **Vulnérabilité** : Injection NoSQL via JSON parsing
+
+**Pourquoi c'est vulnérable** : Le code utilise `JSON.parse()` sur l'input utilisateur sans validation. Un attaquant peut injecter des opérateurs MongoDB malveillants comme `{"$ne": null}` pour récupérer tous les utilisateurs au lieu d'un seul.
 ```diff
 - let query;
 - try {
@@ -54,7 +56,7 @@ docker compose up --build -d
 
 **Solution Manuelle** :
 ```diff
-+ // Protection contre l'injection (bonne pratique générale)
++ // Protection contre l'injection 
 + if (typeof username !== 'string') {
 +     throw new Error('Username must be a string');
 + }
@@ -97,6 +99,8 @@ docker compose up --build -d
 **Fonctionnalité** : Recherche dans le texte des messages
 
 **Vulnérabilité** : Injection NoSQL via JSON parsing
+
+**Pourquoi c'est vulnérable** : Le code utilise `JSON.parse()` sur l'input utilisateur. Un attaquant peut injecter des opérateurs MongoDB comme `{"$regex": ".*"}` pour récupérer tous les messages au lieu de faire une recherche normale.
 ```diff
 - let query;
 - try {
@@ -111,7 +115,7 @@ docker compose up --build -d
 
 **Solution Manuelle** :
 ```diff
-+ // Protection contre l'injection (bonne pratique générale)
++ // Protection contre l'injection
 + if (typeof content !== 'string') {
 +     throw new Error('Content must be a string');
 + }
@@ -149,6 +153,8 @@ docker compose up --build -d
 **Fonctionnalité** : Recherche de messages par salle
 
 **Vulnérabilité** : Injection NoSQL via JSON parsing
+
+**Pourquoi c'est vulnérable** : Le code utilise `JSON.parse()` sur l'input utilisateur. Un attaquant peut injecter des opérateurs MongoDB comme `{"$ne": null}` pour récupérer tous les messages de toutes les salles au lieu d'une salle spécifique.
 ```diff
 - let query;
 - try {
@@ -163,7 +169,7 @@ docker compose up --build -d
 
 **Solution Manuelle** :
 ```diff
-+ // Protection contre l'injection (bonne pratique générale)
++ // Protection contre l'injection
 + if (typeof room !== 'string') {
 +     throw new Error('Room must be a string');
 + }
@@ -206,6 +212,8 @@ docker compose up --build -d
 **Fonctionnalité** : Messagerie instantanée avec Socket.IO
 
 **Vulnérabilité** : Pas de validation du contenu des messages
+
+**Pourquoi c'est vulnérable** : Le code accepte n'importe quel contenu sans validation. Un attaquant peut injecter du code malveillant, des balises HTML dangereuses, ou des scripts qui s'exécutent côté client, créant des vulnérabilités XSS.
 ```diff
 - const newMessage: Message = { ...message, timestamp: new Date() };
 - // Pas de validation du contenu
@@ -215,7 +223,7 @@ docker compose up --build -d
 
 **Solution Manuelle** :
 ```diff
-+ // Protection contre l'injection (bonne pratique générale)
++ // Protection contre l'injection 
 + if (typeof message.content !== 'string') {
 +     throw new Error('Message content must be a string');
 + }
