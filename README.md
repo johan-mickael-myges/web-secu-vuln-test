@@ -50,7 +50,28 @@ docker compose up --build -d
 - }
 ```
 
-**Solution** :
+**Solutions** :
+
+**Solution Manuelle** :
+```diff
++ // Validation manuelle
++ if (!username || typeof username !== 'string') {
++     throw new Error('Username is required and must be a string');
++ }
++ 
++ if (username.length > 50) {
++     throw new Error('Username too long');
++ }
++ 
++ // Vérifier le format (lettres, chiffres, tirets, underscores)
++ if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
++     throw new Error('Invalid username format');
++ }
++ 
++ const query = { username: username.trim() };
+```
+
+**Solution avec Zod** :
 ```diff
 + // Avec Zod (validation de schéma)
 + import { z } from 'zod';
@@ -64,7 +85,7 @@ docker compose up --build -d
 + const query = { username: validatedUsername };
 ```
 
-**Alternative avec Joi** :
+**Solution avec Joi** :
 ```diff
 + // Avec Joi (validation alternative)
 + import Joi from 'joi';
@@ -92,7 +113,28 @@ docker compose up --build -d
 - }
 ```
 
-**Solution** :
+**Solutions** :
+
+**Solution Manuelle** :
+```diff
++ // Sanitisation manuelle
++ if (!content || typeof content !== 'string') {
++     throw new Error('Search content is required and must be a string');
++ }
++ 
++ if (content.length > 200) {
++     throw new Error('Search content too long');
++ }
++ 
++ // Échapper les caractères spéciaux pour les regex
++ const sanitizedContent = content
++     .trim()
++     .replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
++ 
++ const query = { content: { $regex: sanitizedContent, $options: 'i' } };
+```
+
+**Solution avec Zod** :
 ```diff
 + // Avec Zod + escape-regex-string
 + import { z } from 'zod';
@@ -107,7 +149,7 @@ docker compose up --build -d
 + const query = { content: { $regex: sanitizedContent, $options: 'i' } };
 ```
 
-**Alternative avec Joi + escape-regex-string** :
+**Solution avec Joi** :
 ```diff
 + // Avec Joi + escape-regex-string
 + import Joi from 'joi';
@@ -136,7 +178,28 @@ docker compose up --build -d
 + }
 ```
 
-**Solution** :
+**Solutions** :
+
+**Solution Manuelle** :
+```diff
++ // Validation manuelle
++ if (!room || typeof room !== 'string') {
++     throw new Error('Room name is required and must be a string');
++ }
++ 
++ if (room.length > 50) {
++     throw new Error('Room name too long');
++ }
++ 
++ // Vérifier le format (lettres, chiffres, tirets, underscores)
++ if (!/^[a-zA-Z0-9_-]+$/.test(room)) {
++     throw new Error('Invalid room name format');
++ }
++ 
++ const query = { room: room.trim() };
+```
+
+**Solution avec Zod** :
 ```diff
 + // Avec Zod (validation de schéma)
 + import { z } from 'zod';
@@ -150,7 +213,7 @@ docker compose up --build -d
 + const query = { room: validatedRoom };
 ```
 
-**Alternative avec Joi** :
+**Solution avec Joi** :
 ```diff
 + // Avec Joi (validation alternative)
 + import Joi from 'joi';
@@ -173,7 +236,37 @@ docker compose up --build -d
 - // Pas de validation du contenu
 ```
 
-**Solution** :
+**Solutions** :
+
+**Solution Manuelle** :
+```diff
++ // Validation et sanitisation manuelle
++ if (!message.content || typeof message.content !== 'string') {
++     throw new Error('Message content is required and must be a string');
++ }
++ 
++ if (message.content.length > 1000) {
++     throw new Error('Message content too long');
++ }
++ 
++ // Nettoyer le contenu
++ const sanitizedContent = message.content
++     .trim()
++     .replace(/[<>]/g, '') // Éviter les balises HTML
++     .replace(/\s+/g, ' '); // Normaliser les espaces
++ 
++ if (sanitizedContent.length === 0) {
++     throw new Error('Message content cannot be empty after cleaning');
++ }
++ 
++ const newMessage: Message = { 
++     ...message, 
++     content: sanitizedContent,
++     timestamp: new Date() 
++ };
+```
+
+**Solution avec Zod** :
 ```diff
 + // Avec Zod (validation de schéma)
 + import { z } from 'zod';
@@ -195,7 +288,7 @@ docker compose up --build -d
 + };
 ```
 
-**Alternative avec Joi** :
+**Solution avec Joi** :
 ```diff
 + // Avec Joi (validation alternative)
 + import Joi from 'joi';
