@@ -52,11 +52,30 @@ docker compose up --build -d
 
 **Solution** :
 ```diff
-+ // Validation de l'input
-+ if (typeof username !== 'string' || username.length > 50) {
-+     throw new Error('Invalid username');
-+ }
-+ const query = { username: username };
++ // Avec Zod (validation de schéma)
++ import { z } from 'zod';
++ 
++ const UsernameSchema = z.string()
++     .min(1, 'Username is required')
++     .max(50, 'Username too long')
++     .regex(/^[a-zA-Z0-9_-]+$/, 'Invalid username format');
++ 
++ const validatedUsername = UsernameSchema.parse(username);
++ const query = { username: validatedUsername };
+```
+
+**Alternative avec Joi** :
+```diff
++ // Avec Joi (validation alternative)
++ import Joi from 'joi';
++ 
++ const { error, value } = Joi.string()
++     .min(1).max(50)
++     .pattern(/^[a-zA-Z0-9_-]+$/)
++     .validate(username);
++ 
++ if (error) throw new Error(error.details[0].message);
++ const query = { username: value };
 ```
 
 ### 2. Recherche par Contenu
@@ -75,8 +94,31 @@ docker compose up --build -d
 
 **Solution** :
 ```diff
-+ // Sanitisation de l'input
-+ const sanitizedContent = content.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
++ // Avec Zod + escape-regex-string
++ import { z } from 'zod';
++ import escapeRegex from 'escape-regex-string';
++ 
++ const ContentSchema = z.string()
++     .min(1, 'Search content is required')
++     .max(200, 'Search content too long')
++     .transform(val => escapeRegex(val.trim()));
++ 
++ const sanitizedContent = ContentSchema.parse(content);
++ const query = { content: { $regex: sanitizedContent, $options: 'i' } };
+```
+
+**Alternative avec Joi + escape-regex-string** :
+```diff
++ // Avec Joi + escape-regex-string
++ import Joi from 'joi';
++ import escapeRegex from 'escape-regex-string';
++ 
++ const { error, value } = Joi.string()
++     .min(1).max(200)
++     .validate(content);
++ 
++ if (error) throw new Error(error.details[0].message);
++ const sanitizedContent = escapeRegex(value.trim());
 + const query = { content: { $regex: sanitizedContent, $options: 'i' } };
 ```
 
@@ -96,11 +138,30 @@ docker compose up --build -d
 
 **Solution** :
 ```diff
-+ // Validation de l'input
-+ if (typeof room !== 'string' || room.length > 50) {
-+     throw new Error('Invalid room name');
-+ }
-+ const query = { room: room };
++ // Avec Zod (validation de schéma)
++ import { z } from 'zod';
++ 
++ const RoomSchema = z.string()
++     .min(1, 'Room name is required')
++     .max(50, 'Room name too long')
++     .regex(/^[a-zA-Z0-9_-]+$/, 'Invalid room name format');
++ 
++ const validatedRoom = RoomSchema.parse(room);
++ const query = { room: validatedRoom };
+```
+
+**Alternative avec Joi** :
+```diff
++ // Avec Joi (validation alternative)
++ import Joi from 'joi';
++ 
++ const { error, value } = Joi.string()
++     .min(1).max(50)
++     .pattern(/^[a-zA-Z0-9_-]+$/)
++     .validate(room);
++ 
++ if (error) throw new Error(error.details[0].message);
++ const query = { room: value };
 ```
 
 ### 4. Chat en Temps Réel
@@ -114,27 +175,41 @@ docker compose up --build -d
 
 **Solution** :
 ```diff
-+ // Validation et sanitisation du contenu
-+ if (!message.content || typeof message.content !== 'string') {
-+     throw new Error('Message content is required and must be a string');
-+ }
++ // Avec Zod (validation de schéma)
++ import { z } from 'zod';
 + 
-+ // Limiter la longueur et nettoyer les caractères dangereux
-+ const sanitizedContent = message.content
-+     .trim()
-+     .slice(0, 1000)
-+     .replace(/[<>]/g, '') // Éviter les balises HTML
-+     .replace(/\s+/g, ' '); // Normaliser les espaces
++ const MessageSchema = z.object({
++     content: z.string()
++         .min(1, 'Message cannot be empty')
++         .max(1000, 'Message too long')
++         .transform(val => val.trim())
++         .refine(val => val.length > 0, 'Message cannot be empty after trimming'),
++     username: z.string().min(1).max(50),
++     room: z.string().min(1).max(50)
++ });
 + 
-+ if (sanitizedContent.length === 0) {
-+     throw new Error('Message content cannot be empty');
-+ }
-+ 
++ const validatedMessage = MessageSchema.parse(message);
 + const newMessage: Message = { 
-+     ...message, 
-+     content: sanitizedContent,
++     ...validatedMessage, 
 +     timestamp: new Date() 
 + };
+```
+
+**Alternative avec Joi** :
+```diff
++ // Avec Joi (validation alternative)
++ import Joi from 'joi';
++ 
++ const messageSchema = Joi.object({
++     content: Joi.string().min(1).max(1000).required(),
++     username: Joi.string().min(1).max(50).required(),
++     room: Joi.string().min(1).max(50).required()
++ });
++ 
++ const { error, value } = messageSchema.validate(message);
++ if (error) throw new Error(error.details[0].message);
++ 
++ const newMessage: Message = { ...value, timestamp: new Date() };
 ```
 
 ## 🧪 Comment Tester les Vulnérabilités
@@ -175,3 +250,20 @@ socket.emit('search-messages', {
 - **Base de données** : MongoDB
 - **Proxy** : Nginx + SSL/TLS
 - **Containerisation** : Docker Compose
+
+## 📚 Librairies de Sécurité Recommandées
+
+### Validation de Données
+- **Zod** : Validation de schémas TypeScript-first
+- **Joi** : Validation robuste et flexible
+- **Yup** : Validation simple et performante
+
+### Sanitisation
+- **escape-regex-string** : Échapper les caractères spéciaux pour les regex
+- **DOMPurify** : Sanitisation HTML côté client
+- **validator.js** : Validation et sanitisation complète
+
+### Protection NoSQL
+- **mongodb-sanitize** : Nettoyer les objets MongoDB
+- **express-rate-limit** : Limiter les requêtes
+- **helmet** : Headers de sécurité HTTP
