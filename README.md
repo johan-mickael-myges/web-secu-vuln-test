@@ -16,7 +16,7 @@ cd web-secu-vuln-test
 docker compose down
 docker system prune -f
 
-# Générer les certificats SSL
+# Générer les certificats SSL (créés dans nginx/certs/)
 chmod +x nginx/generate-ssl.sh
 ./nginx/generate-ssl.sh
 
