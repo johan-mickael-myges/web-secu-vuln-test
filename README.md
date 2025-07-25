@@ -41,14 +41,13 @@ docker compose up --build -d
 
 **Vulnérabilité** : Injection NoSQL via JSON parsing
 ```diff
-- const query = { username: username };
-+ let query;
-+ try {
-+     const parsedUsername = JSON.parse(username);
-+     query = { username: parsedUsername };
-+ } catch {
-+     query = { username: username };
-+ }
+- let query;
+- try {
+-     const parsedUsername = JSON.parse(username);
+-     query = { username: parsedUsername };
+- } catch {
+-     query = { username: username };
+- }
 ```
 
 **Solution** :
@@ -65,14 +64,13 @@ docker compose up --build -d
 
 **Vulnérabilité** : Injection NoSQL via JSON parsing
 ```diff
-- const query = { content: { $regex: content, $options: 'i' } };
-+ let query;
-+ try {
-+     const parsedContent = JSON.parse(content);
-+     query = { content: parsedContent };
-+ } catch {
-+     query = { content: { $regex: content, $options: 'i' } };
-+ }
+- let query;
+- try {
+-     const parsedContent = JSON.parse(content);
+-     query = { content: parsedContent };
+- } catch {
+-     query = { content: { $regex: content, $options: 'i' } };
+- }
 ```
 
 **Solution** :
@@ -87,11 +85,10 @@ docker compose up --build -d
 
 **Vulnérabilité** : Injection NoSQL via JSON parsing
 ```diff
-- const query = { room: room };
-+ let query;
-+ try {
-+     const parsedRoom = JSON.parse(room);
-+     query = { room: parsedRoom };
+- let query;
+- try {
+-     const parsedRoom = JSON.parse(room);
+-     query = { room: parsedRoom };
 + } catch {
 +     query = { room: room };
 + }
@@ -112,8 +109,7 @@ docker compose up --build -d
 **Vulnérabilité** : Pas de validation du contenu des messages
 ```diff
 - const newMessage: Message = { ...message, timestamp: new Date() };
-+ const newMessage: Message = { ...message, timestamp: new Date() };
-+ // Pas de validation du contenu
+- // Pas de validation du contenu
 ```
 
 **Solution** :
