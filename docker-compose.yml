@@ -1,0 +1,39 @@
+services:
+  app:
+    build: ./app
+    container_name: nextjs_app
+    restart: always
+    environment:
+      - MONGODB_URI=mongodb://mongo:27017/secuweb
+    depends_on:
+      - mongo
+    networks:
+      - webnet
+  mongo:
+    image: mongo:6
+    container_name: mongo_db
+    restart: always
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - webnet
+  nginx:
+    image: nginx:alpine
+    container_name: nginx_proxy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/certs:/etc/letsencrypt
+      - ./nginx/html:/usr/share/nginx/html
+    depends_on:
+      - app
+    networks:
+      - webnet
+volumes:
+  mongo_data:
+networks:
+  webnet:
+    driver: bridge
