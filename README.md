@@ -114,11 +114,27 @@ docker compose up --build -d
 
 **Solution** :
 ```diff
-+ // Validation du contenu
-+ if (typeof message.content !== 'string' || message.content.length > 1000) {
-+     throw new Error('Invalid message content');
++ // Validation et sanitisation du contenu
++ if (!message.content || typeof message.content !== 'string') {
++     throw new Error('Message content is required and must be a string');
 + }
-+ const newMessage: Message = { ...message, timestamp: new Date() };
++ 
++ // Limiter la longueur et nettoyer les caractères dangereux
++ const sanitizedContent = message.content
++     .trim()
++     .slice(0, 1000)
++     .replace(/[<>]/g, '') // Éviter les balises HTML
++     .replace(/\s+/g, ' '); // Normaliser les espaces
++ 
++ if (sanitizedContent.length === 0) {
++     throw new Error('Message content cannot be empty');
++ }
++ 
++ const newMessage: Message = { 
++     ...message, 
++     content: sanitizedContent,
++     timestamp: new Date() 
++ };
 ```
 
 ## 🧪 Comment Tester les Vulnérabilités
